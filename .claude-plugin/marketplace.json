@@ -1,0 +1,6 @@
+{
+  "name": "claude-pet-desktop-alert",
+  "owner": { "name": "micarrizo" },
+  "description": "La mascota que te avisa cuando Claude te está esperando",
+  "plugins": [{ "name": "aviso-espera", "source": "./" }]
+}

@@ -1,0 +1,19 @@
+{
+  "name": "aviso-espera",
+  "version": "0.3.0",
+  "description": "Una mascota pixelada cruza tu pantalla a saltos cuando Claude te dejó una pregunta sin responder: muestra el título del chat y un clic te lleva directo a él (Windows + app de escritorio de Claude)",
+  "author": { "name": "micarrizo" },
+  "license": "MIT",
+  "keywords": ["notificaciones", "mascota", "windows", "escritorio"],
+  "types": "./types/index.d.ts",
+  "userConfig": {
+    "discordWebhook": {
+      "type": "string",
+      "title": "Webhook de Discord (opcional)",
+      "description": "Si lo pones, a los 10 minutos sin respuesta también te avisa por Discord. Déjalo vacío para no usar Discord.",
+      "sensitive": true,
+      "required": false,
+      "default": ""
+    }
+  }
+}
