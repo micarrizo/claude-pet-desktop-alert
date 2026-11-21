@@ -1,5 +1,5 @@
 ﻿# Devuelve en JSON la app que está en primer plano y los segundos desde la última tecla o movimiento del mouse.
-# Lo usa el mod aviso-espera para no avisar mientras estás mirando la app de Claude.
+# Lo usa el mod Hoppy para no avisar mientras estás mirando la app de Claude.
 $ErrorActionPreference = 'Stop'
 Add-Type -TypeDefinition @'
 using System;

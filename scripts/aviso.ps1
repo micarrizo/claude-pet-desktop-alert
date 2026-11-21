@@ -1,14 +1,16 @@
 ﻿# Aviso animado: una mascota pixelada avanza a saltos por el borde inferior de la pantalla, encima de
 # todo, con un globo que dice qué chat te espera. Entre salto y salto se queda quieta para que el texto
 # se lea. Cursor encima: se detiene. Clic: abre ese chat en la app de Claude. Clic derecho: la cierra.
-# Lo lanza el mod aviso-espera.
+# Lo lanza el mod Hoppy (hooks/register.tsx).
 param(
-    [string]$Texto = 'Te dejé una pregunta',
+    [string]$Texto = 'Hey, I left you a question',
     [string]$Detalle = '',
     [string]$Titulo = '',
     # Id de la sesión en la app de escritorio (local_...), para el deep link claude://code/continue.
     [string]$Sesion = '',
-    [string]$Sonido = ''
+    [string]$Sonido = '',
+    # Idioma del pie del globo: en | es (el resto del texto lo manda el mod ya traducido).
+    [string]$Idioma = 'en'
 )
 $ErrorActionPreference = 'Stop'
 
@@ -95,7 +97,12 @@ try {
         [void]$pila.Children.Add($t2)
     }
     $t3 = New-Object System.Windows.Controls.TextBlock
-    $t3.Text = $(if ($Sesion) { 'clic: ir al chat · clic derecho: cerrar · cursor encima: pausa' } else { 'clic para cerrar · cursor encima: pausa' })
+    $pies = @{
+        en = @('click: open chat · right-click: close · hover: pause', 'click to close · hover: pause')
+        es = @('clic: ir al chat · clic derecho: cerrar · cursor encima: pausa', 'clic para cerrar · cursor encima: pausa')
+    }
+    $pie = $(if ($Idioma -eq 'es') { $pies.es } else { $pies.en })
+    $t3.Text = $(if ($Sesion) { $pie[0] } else { $pie[1] })
     $t3.FontSize = 12; $t3.Margin = '0,6,0,0'
     $t3.Foreground = $pincel.ConvertFromString('#7A7A7A')
     [void]$pila.Children.Add($t3)

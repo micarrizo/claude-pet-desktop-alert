@@ -1,6 +1,6 @@
 # Dado el id de la sesion de Claude Code (el nombre del transcript), devuelve en JSON el id de la
 # sesion en la app de escritorio (local_...) y su titulo, leidos de los metadatos que guarda la app.
-# Lo usa el mod aviso-espera para mostrar el titulo del chat y para que el clic abra ese chat.
+# Lo usa el mod Hoppy para mostrar el titulo del chat y para que el clic abra ese chat.
 # Salida: {"id":"local_...","titulo":"..."} o {} si no la encuentra. Solo ASCII (\uXXXX), para no
 # depender de la codificacion de la consola.
 param([Parameter(Mandatory = $true)][string]$Cli)

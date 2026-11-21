@@ -15,10 +15,46 @@ const POWERSHELL = 'C:\\Windows\\System32\\WindowsPowerShell\\v1.0\\powershell.e
 // El webhook de Discord es opcional: sale de la opción `discordWebhook` del plugin (se guarda como secreto).
 let webhookDiscord = ''
 
-const espera = atom({ plugin: 'aviso-espera', key: 'espera' } as const, null as Espera | null, {
+// ---------- textos (opción `language`: en | es) ----------
+
+type Idioma = 'en' | 'es'
+let idioma: Idioma = 'en'
+
+const TEXTOS = {
+  en: {
+    primero: 'Hey, I left you a question 👀',
+    segundo: 'Still waiting for your answer',
+    prueba: 'Test: this is how I nudge you 👀',
+    pruebaDetalle: "When I leave you a question and you don't answer within 2 minutes",
+    lanzado: 'Hoppy is on its way: it hops across the bottom of your screen. Click it to open this chat.',
+    pausado: 'Hoppy is snoozing in this chat.',
+    activo: 'Hoppy is awake again in this chat.',
+    sinPregunta: 'You have a pending question.',
+    discord: (min: number, donde: string) => `⏳ Claude has been waiting for ${min} min in ${donde}.`,
+    chat: (t: string) => `the chat “${t}”`,
+    carpeta: (c: string) => `the session in “${c}”`,
+  },
+  es: {
+    primero: 'Oye, te dejé una pregunta 👀',
+    segundo: 'Sigo esperando tu respuesta',
+    prueba: 'Prueba: así te aviso 👀',
+    pruebaDetalle: 'Cuando te deje una pregunta y no contestes en 2 minutos',
+    lanzado: 'Hoppy va en camino: cruza a saltos la parte de abajo de tu pantalla. Clic: abre este chat.',
+    pausado: 'Hoppy está durmiendo en este chat.',
+    activo: 'Hoppy despertó en este chat.',
+    sinPregunta: 'Te dejó una pregunta.',
+    discord: (min: number, donde: string) => `⏳ Claude te espera hace ${min} min en ${donde}.`,
+    chat: (t: string) => `el chat «${t}»`,
+    carpeta: (c: string) => `la sesión de «${c}»`,
+  },
+} as const
+
+const txt = () => TEXTOS[idioma]
+
+const espera = atom({ plugin: 'hoppy', key: 'espera' } as const, null as Espera | null, {
   shape: 'espera-1',
 })
-const pausa = atom({ plugin: 'aviso-espera', key: 'pausa' } as const, false, { shape: 'pausa-1' })
+const pausa = atom({ plugin: 'hoppy', key: 'pausa' } as const, false, { shape: 'pausa-1' })
 
 let revisando = false
 // La pregunta que Claude dejó este turno en el recuadro de abajo (wrap_up `ask`) o en un
@@ -114,6 +150,7 @@ async function lanzarAviso($: EngineInterface, texto: string, detalle: string): 
         '-Titulo', chat?.titulo ?? '',
         '-Sesion', chat?.id ?? '',
         '-Sonido', `${raiz}/scripts/campanita.wav`,
+        '-Idioma', idioma,
       ],
       // Con el cursor encima la mascota se detiene: puede quedar hasta 2 min en pantalla.
       { timeoutMs: 150_000 },
@@ -129,10 +166,10 @@ async function avisarDiscord($: EngineInterface, e: Espera, ahora: number): Prom
   const chat = await chatActual($)
   const cwd = await $.session.cwd()
   const carpeta = cwd.split(/[\\/]/).filter(Boolean).pop() ?? cwd
-  const donde = chat?.titulo ? `el chat «${chat.titulo}»` : `la sesión de «${carpeta}»`
+  const donde = chat?.titulo ? txt().chat(chat.titulo) : txt().carpeta(carpeta)
   const cuerpo = {
-    username: 'Claude Code',
-    content: `⏳ Claude te espera hace ${minutos} min en ${donde}.\n> ${e.pregunta || 'Te dejó una pregunta.'}`,
+    username: 'Hoppy',
+    content: `${txt().discord(minutos, donde)}\n> ${e.pregunta || txt().sinPregunta}`,
   }
   try {
     const r = await $.http.fetch(url, {
@@ -172,10 +209,10 @@ async function revisar($: EngineInterface): Promise<void> {
     const sinAtender = ahora - e.desde
     if (e.avisos === 0 && sinAtender >= PRIMER_AVISO_MS) {
       await update($, espera, x => (x ? { ...x, avisos: 1 } : x))
-      await lanzarAviso($, 'Oye, te dejé una pregunta 👀', e.pregunta)
+      await lanzarAviso($, txt().primero, e.pregunta)
     } else if (e.avisos === 1 && sinAtender >= SEGUNDO_AVISO_MS) {
       await update($, espera, x => (x ? { ...x, avisos: 2 } : x))
-      await lanzarAviso($, 'Sigo esperando tu respuesta', e.pregunta)
+      await lanzarAviso($, txt().segundo, e.pregunta)
     }
     if (!e.discord && sinAtender >= DISCORD_MS) {
       const enviado = await avisarDiscord($, e, ahora)
@@ -192,16 +229,17 @@ export const register: Register = (on, options) => {
   // Solo se acepta un webhook de Discord por https: cualquier otra cosa deja el aviso por Discord apagado.
   const url = typeof options.discordWebhook === 'string' ? options.discordWebhook.trim() : ''
   webhookDiscord = /^https:\/\/(discord|discordapp)\.com\/api\/webhooks\//.test(url) ? url : ''
+  idioma = options.language === 'es' ? 'es' : 'en'
 
   on('session.start', async ($, ev, next) => {
     const started = await next(ev)
     await $.command.register({
-      name: 'espera-probar',
-      description: 'Muestra ahora el aviso animado de «te dejé una pregunta», para probarlo',
+      name: 'hoppy-test',
+      description: 'Send Hoppy across your screen right now, to see how the alert looks',
     })
     await $.command.register({
-      name: 'espera-pausa',
-      description: 'Pausa o reanuda los avisos de «Claude te espera» en esta sesión',
+      name: 'hoppy-snooze',
+      description: "Snooze or wake Hoppy's alerts in this chat",
     })
     $.clock.every(CADA_MS, () => {
       void revisar($)
@@ -247,16 +285,14 @@ export const register: Register = (on, options) => {
     return next(ev)
   }).catch(($, ev, next) => next(ev))
 
-  on('command.run', { command: 'espera-probar' }, async $ => {
-    await lanzarAviso($, 'Prueba: así te aviso 👀', 'Cuando te deje una pregunta y no contestes en 2 minutos')
-    return {
-      text: 'Aviso de prueba lanzado: la mascota cruza a saltos la parte de abajo de la pantalla. Clic: abre este chat.',
-    }
+  on('command.run', { command: 'hoppy-test' }, async $ => {
+    await lanzarAviso($, txt().prueba, txt().pruebaDetalle)
+    return { text: txt().lanzado }
   })
 
-  on('command.run', { command: 'espera-pausa' }, async $ => {
+  on('command.run', { command: 'hoppy-snooze' }, async $ => {
     const ahora = !(await read($, pausa))
     await update($, pausa, () => ahora)
-    return { text: ahora ? 'Avisos de «Claude te espera» en pausa.' : 'Avisos de «Claude te espera» activos.' }
+    return { text: ahora ? txt().pausado : txt().activo }
   })
 }

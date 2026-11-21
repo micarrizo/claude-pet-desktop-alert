@@ -14,7 +14,7 @@ export type Espera = {
 
 declare module 'claude-code' {
   interface PluginState {
-    'aviso-espera': {
+    hoppy: {
       espera: Shaped<Espera | null>
       pausa: Shaped<boolean>
     }

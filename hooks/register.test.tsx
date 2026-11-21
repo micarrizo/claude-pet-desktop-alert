@@ -27,16 +27,16 @@ function motor(on: On): unknown[] {
   return escrito
 }
 
-test('espera-pausa alterna entre pausa y activo', async ($, on) => {
+test('hoppy-snooze alterna entre dormido y despierto', async ($, on) => {
   on('command.register', () => ({ value: { command: 'ok' } }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
 
   await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
 
-  const primera = await $.command.run({ ...COMANDO, command: 'espera-pausa' })
-  expect(primera.text).toContain('en pausa')
-  const segunda = await $.command.run({ ...COMANDO, command: 'espera-pausa' })
-  expect(segunda.text).toContain('activos')
+  const primera = await $.command.run({ ...COMANDO, command: 'hoppy-snooze' })
+  expect(primera.text).toContain('snoozing')
+  const segunda = await $.command.run({ ...COMANDO, command: 'hoppy-snooze' })
+  expect(segunda.text).toContain('awake')
 })
 
 test('la pregunta del recuadro (wrap_up ask) deja a Claude esperando aunque el mensaje no tenga «?»', async ($, on) => {
@@ -59,7 +59,7 @@ test('un turno sin pregunta en el recuadro ni «?» no deja espera', async ($, o
   expect(escrito.length).toBe(0)
 })
 
-test('espera-probar pasa el título y el id del chat (local_…) a la mascota', async ($, on) => {
+test('hoppy-test pasa el título y el id del chat (local_…) a la mascota', async ($, on) => {
   const lanzados: string[][] = []
   on('command.register', () => ({ value: { command: 'ok' } }))
   on('session.start', (_, e) => ({ cwd: e.cwd }))
@@ -75,9 +75,9 @@ test('espera-probar pasa el título y el id del chat (local_…) a la mascota', 
   })
 
   await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
-  const r = await $.command.run({ ...COMANDO, command: 'espera-probar' })
+  const r = await $.command.run({ ...COMANDO, command: 'hoppy-test' })
 
-  expect(r.text).toContain('abre este chat')
+  expect(r.text).toContain('open this chat')
   const argv = lanzados[0] ?? []
   expect(argv[argv.indexOf('-Titulo') + 1]).toBe('Arreglar el login')
   expect(argv[argv.indexOf('-Sesion') + 1]).toBe('local_aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee')
@@ -96,9 +96,30 @@ test('sin metadatos de la app (sesión de terminal) la mascota sale igual, sin t
   })
 
   await $.session.start({ cwd: '/', surface: 'terminal', isInteractive: true })
-  await $.command.run({ ...COMANDO, command: 'espera-probar' })
+  await $.command.run({ ...COMANDO, command: 'hoppy-test' })
 
   const argv = lanzados[0] ?? []
   expect(argv[argv.indexOf('-Titulo') + 1]).toBe('')
   expect(argv[argv.indexOf('-Sesion') + 1]).toBe('')
+})
+
+test('con language = es, Hoppy habla español (globo y pie)', { options: { language: 'es' } }, async ($, on) => {
+  const lanzados: string[][] = []
+  on('command.register', () => ({ value: { command: 'ok' } }))
+  on('session.start', (_, e) => ({ cwd: e.cwd }))
+  on('clock.every', () => ({ value: undefined }))
+  on('session.id', () => ({ value: '11111111-2222-3333-4444-555555555555' }))
+  on('process.run', (_, e) => {
+    const argv = [...e.argv]
+    if (argv.some(a => a.endsWith('aviso.ps1'))) lanzados.push(argv)
+    return { value: { exitCode: 0, stdout: '{}', stderr: '', isStdoutTruncated: false, isStderrTruncated: false } }
+  })
+
+  await $.session.start({ cwd: '/', surface: 'desktop', isInteractive: true })
+  const r = await $.command.run({ ...COMANDO, command: 'hoppy-test' })
+
+  expect(r.text).toContain('Hoppy va en camino')
+  const argv = lanzados[0] ?? []
+  expect(argv[argv.indexOf('-Texto') + 1]).toBe('Prueba: así te aviso 👀')
+  expect(argv[argv.indexOf('-Idioma') + 1]).toBe('es')
 })

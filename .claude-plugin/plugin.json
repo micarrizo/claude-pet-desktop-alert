@@ -1,16 +1,24 @@
 {
-  "name": "aviso-espera",
-  "version": "0.3.0",
-  "description": "Una mascota pixelada cruza tu pantalla a saltos cuando Claude te dejó una pregunta sin responder: muestra el título del chat y un clic te lleva directo a él (Windows + app de escritorio de Claude)",
+  "name": "hoppy",
+  "version": "0.4.0",
+  "description": "Hoppy, a tiny pixel pet, hops across your screen when Claude left you a question you haven't answered: it shows the chat's title and one click takes you straight to it (Windows + Claude desktop app)",
   "author": { "name": "micarrizo" },
   "license": "MIT",
-  "keywords": ["notificaciones", "mascota", "windows", "escritorio"],
+  "keywords": ["notifications", "pet", "mascot", "windows", "desktop"],
   "types": "./types/index.d.ts",
   "userConfig": {
+    "language": {
+      "type": "string",
+      "title": "Language",
+      "description": "Language of Hoppy's speech bubble and messages: en (English) or es (Español).",
+      "options": ["en", "es"],
+      "default": "en",
+      "required": false
+    },
     "discordWebhook": {
       "type": "string",
-      "title": "Webhook de Discord (opcional)",
-      "description": "Si lo pones, a los 10 minutos sin respuesta también te avisa por Discord. Déjalo vacío para no usar Discord.",
+      "title": "Discord webhook (optional)",
+      "description": "If set, after 10 minutes without an answer Hoppy also pings you on Discord. Leave it empty to skip Discord.",
       "sensitive": true,
       "required": false,
       "default": ""
